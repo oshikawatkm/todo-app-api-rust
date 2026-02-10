@@ -17,3 +17,5 @@ async-trait = "0.1"
 dotenvy = "0.15"
 chrono = { version = "0.4", features = ["serde"] }
 http = "1.2"
+utoipa = { version = "5", features = ["axum_extras", "uuid"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }

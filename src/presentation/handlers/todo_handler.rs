@@ -8,6 +8,7 @@ use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
+use utoipa::ToSchema;
 
 use crate::usecase::todo_usecase::TodoService;
 use crate::domain::models::todo::Todo;
@@ -30,21 +31,21 @@ pub fn create_todo_router<T: TodoService + Send + Sync + 'static + Clone>(todo_s
     .with_state(state)
 }
 
-#[derive(Deserialize)]
-struct CreateTodoRequest {
+#[derive(Deserialize, ToSchema)]
+pub struct CreateTodoRequest {
   title: String,
   description: String,
 }
 
 
-#[derive(Deserialize)]
-struct UpdateTodoRequest {
+#[derive(Deserialize, ToSchema)]
+pub struct UpdateTodoRequest {
   title: String,
   description: String,
   completed: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 struct TodoResponse {
   id: Uuid,
   title: String,
@@ -65,7 +66,16 @@ impl From<Todo> for TodoResponse {
 }
 
 
-async fn get_all_todos<T: TodoService>(
+#[utoipa::path(
+    get,
+    path = "/api/todos",
+    responses(
+        (status = 200, description = "全Todoを取得", body = Vec<TodoResponse>),
+        (status = 500, description = "サーバーエラー")
+    ),
+    tag = "todos"
+)]
+pub async fn get_all_todos<T: TodoService>(
   State(state): State<AppState<T>>,
 ) -> impl IntoResponse {
   match state.todo_service.get_all_todos().await {
@@ -77,7 +87,18 @@ async fn get_all_todos<T: TodoService>(
   }
 }
 
-async fn get_todo_by_id<T: TodoService>(
+#[utoipa::path(
+    get,
+    path = "/api/todos/{id}",
+    params(("id" = Uuid, Path, description = "Todo ID")),
+    responses(
+        (status = 200, description = "Todoを取得", body = TodoResponse),
+        (status = 404, description = "Todoが見つからない"),
+        (status = 500, description = "サーバーエラー")
+    ),
+    tag = "todos"
+)]
+pub async fn get_todo_by_id<T: TodoService>(
   State(state): State<AppState<T>>,
   Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
@@ -88,7 +109,17 @@ async fn get_todo_by_id<T: TodoService>(
   }
 }
 
-async fn create_todo<T: TodoService>(
+#[utoipa::path(
+    post,
+    path = "/api/todos",
+    request_body = CreateTodoRequest,
+    responses(
+        (status = 201, description = "Todoを作成", body = TodoResponse),
+        (status = 500, description = "サーバーエラー")
+    ),
+    tag = "todos"
+)]
+pub async fn create_todo<T: TodoService>(
   State(state): State<AppState<T>>,
   Json(payload): Json<CreateTodoRequest>,
 ) -> impl IntoResponse {
@@ -98,7 +129,19 @@ async fn create_todo<T: TodoService>(
   }
 }
 
-async fn update_todo<T: TodoService>(
+#[utoipa::path(
+    put,
+    path = "/api/todos/{id}",
+    params(("id" = Uuid, Path, description = "Todo ID")),
+    request_body = UpdateTodoRequest,
+    responses(
+        (status = 200, description = "Todoを更新", body = TodoResponse),
+        (status = 404, description = "Todoが見つからない"),
+        (status = 500, description = "サーバーエラー")
+    ),
+    tag = "todos"
+)]
+pub async fn update_todo<T: TodoService>(
   State(state): State<AppState<T>>,
   Path(id): Path<Uuid>,
   Json(payload): Json<UpdateTodoRequest>,
@@ -110,7 +153,18 @@ async fn update_todo<T: TodoService>(
   }
 }
 
-async fn delete_todo<T: TodoService>(
+#[utoipa::path(
+    delete,
+    path = "/api/todos/{id}",
+    params(("id" = Uuid, Path, description = "Todo ID")),
+    responses(
+        (status = 204, description = "Todoを削除"),
+        (status = 404, description = "Todoが見つからない"),
+        (status = 500, description = "サーバーエラー")
+    ),
+    tag = "todos"
+)]
+pub async fn delete_todo<T: TodoService>(
   State(state): State<AppState<T>>,
   Path(id): Path<Uuid>,
 ) -> impl IntoResponse {
